@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Admin Daftar Harga Minuman</title>
+
+<!-- BOOTSTRAP -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+body{background:#f4f6f8}
+.card{border-radius:12px}
+th{cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="container mt-5">
+
+<!-- LOGIN -->
+<div id="loginBox" class="row justify-content-center">
+  <div class="col-md-4">
+    <div class="card p-4 shadow">
+      <h4 class="text-center mb-3">Login Admin</h4>
+      <input id="user" class="form-control mb-2" placeholder="Username">
+      <input id="pass" type="password" class="form-control mb-3" placeholder="Password">
+      <button class="btn btn-primary w-100" onclick="login()">Login</button>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" style="display:none">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Dashboard Harga Minuman</h3>
+    <button class="btn btn-danger" onclick="logout()">Logout</button>
+  </div>
+
+  <!-- INFO -->
+  <div class="row mb-3">
+    <div class="col-md-3"><div class="alert alert-success">💰 Termurah: <b id="minHarga">-</b></div></div>
+    <div class="col-md-3"><div class="alert alert-danger">🔥 Termahal: <b id="maxHarga">-</b></div></div>
+    <div class="col-md-3"><div class="alert alert-info">📦 Total Qty: <b id="totalQty">0</b></div></div>
+    <div class="col-md-3"><div class="alert alert-primary">💵 Total Harga: <b id="totalHarga">Rp 0</b></div></div>
+  </div>
+
+  <!-- FORM -->
+  <div class="card p-3 mb-3 shadow">
+    <div class="row g-2">
+      <div class="col"><input id="nama" class="form-control" placeholder="Nama Barang"></div>
+      <div class="col"><input id="harga" type="number" class="form-control" placeholder="Harga"></div>
+      <div class="col-auto"><button class="btn btn-success" onclick="add()">Tambah</button></div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2 mb-3">
+    <input id="search" class="form-control" placeholder="Cari..." onkeyup="render()">
+    <button class="btn btn-secondary" onclick="exportPDF()">Export PDF</button>
+  </div>
+
+  <table class="table table-striped shadow">
+    <thead class="table-dark">
+      <tr>
+        <th>No</th>
+        <th>Nama</th>
+        <th onclick="sortHarga()">Harga ⬍</th>
+        <th>Qty</th>
+        <th>Subtotal</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+</div>
+</div>
+
+<script>
+/* LOGIN */
+const ADMIN={user:'Santika Jaya',pass:'Santika1'};
+function login(){
+  if(user.value===ADMIN.user && pass.value===ADMIN.pass){
+    localStorage.setItem('login','1');
+    showDashboard();
+  } else alert('Login gagal');
+}
+function logout(){
+  localStorage.removeItem('login');
+  location.reload();
+}
+function showDashboard(){
+  loginBox.style.display='none';
+  dashboard.style.display='block';
+}
+
+/* DATA */
+let data = JSON.parse(localStorage.getItem('data')) || [
+  {nama:'INTISARI',harga:50000,qty:0},
+  {nama:'INTISARI HIJAU',harga:62000,qty:0},
+  {nama:'ANGGUR MERAH',harga:64000,qty:0},
+  {nama:'ANGGUR MERAH GOLD',harga:67000,qty:0},
+  {nama:'ARAK',harga:67000,qty:0},
+  {nama:'KOLESOM KUNING',harga:64000,qty:0},
+  {nama:'KOLESOM BIRU',harga:64000,qty:0},
+  {nama:'ANGGUR PUTIH',harga:64000,qty:0},
+  {nama:'API',harga:750000,qty:0},
+  {nama:'KAWA-KAWA',harga:73000,qty:0},
+  {nama:'KAWA-KAWA BLACK KARENT',harga:73000,qty:0},
+  {nama:'ELEXIS',harga:65000,qty:0},
+  {nama:'NEW PORT',harga:67000,qty:0},
+  {nama:'ANGGUR KETAN HITAM',harga:64000,qty:0},
+  {nama:'MCDONALD ANGGUR MERAH',harga:60000,qty:0},
+  {nama:'A.K HIJAU',harga:65000,qty:0},
+  {nama:'A.K MERAH',harga:65000,qty:0},
+  {nama:'INTISARI KECIL',harga:27000,qty:0},
+  {nama:'ARAK KECIL',harga:33000,qty:0},
+  {nama:'KOLESOM KECIL',harga:33000,qty:0},
+  {nama:'A.M KECIL',harga:33000,qty:0},
+  {nama:'A.M GOLD KECIL',harga:350000,qty:0},
+  {nama:'ASOKA',harga:30000,qty:0},
+  {nama:'TOPI MIRING',harga:30000,qty:0},
+  {nama:'MC DONALD',harga:50000,qty:0},
+  {nama:'JACK TRUE',harga:50000,qty:0},
+  {nama:'CONG YANG',harga:50000,qty:0},
+  {nama:'INTISARI HIJAU KECIL',harga:35000,qty:0},
+  {nama:'QURO',harga:70000,qty:0},
+  {nama:'INTISARI ANGGUR MERAH',harga:60000,qty:0},
+  {nama:'VODKA MIX',harga:30000,qty:0},
+  {nama:'BATAVIA',harga:370000,qty:0},
+  {nama:'ATLAS',harga:73000,qty:0},
+  {nama:'KAWA-KAWA KECIL',harga:43000,qty:0},
+  {nama:'FRIENDSHIP BLACK TEA',harga:73000,qty:0},
+  {nama:'ANKER LECI',harga:27000,qty:0},
+  {nama:'BULWISK KECIL',harga:100000,qty:0},
+  {nama:'BULWISK BESAR',harga:180000,qty:0},
+  {nama:'API PUTIH',harga:75000,qty:0},
+  {nama:'TOTAL GINSENG',harga:45000,qty:0},
+  {nama:'CLOUD SEVEN',harga:27000,qty:0},
+  {nama:'AMER RASA',harga:25000,qty:0},
+  {nama:'FRIENDSHIP GEPENG',harga:40000,qty:0},
+  {nama:'BALEGA',harga:73000,qty:0},
+  {nama:'BINTANG LEMON',harga:30000,qty:0},
+  {nama:'VIBE KECIL',harga:180000,qty:0},
+  {nama:'BARANAGA',harga:160000,qty:0},
+  {nama:'CAPTAIN MORGAN BESAR',harga:350000,qty:0},
+  {nama:'CAPTAIN MORGAN KECIL',harga:110000,qty:0},
+  {nama:'VIBE BESAR',harga:330000,qty:0},
+  {nama:'ICELAND 250 ML',harga:70000,qty:0},
+  {nama:'ICELAND 500 ML',harga:115000,qty:0},
+  {nama:'ICELAND 700 ML',harga:180000,qty:0},
+  {nama:'ICELAND 700 ML ORANGE',harga:180000,qty:0},
+  {nama:'ICELAND 700 ML CYTRUS',harga:180000,qty:0},
+  {nama:'DRUM 250 ML',harga:70000,qty:0},
+  {nama:'DRUM 350 ML',harga:95000,qty:0},
+  {nama:'DRUM 700 ML',harga:175000,qty:0},
+  {nama:'GILBEYS',harga:120000,qty:0},
+  {nama:'MANSIONS',harga:120000,qty:0},
+  {nama:'SIMIRNOF',harga:95000,qty:0},
+  {nama:'FRIENDSHIP',harga:70000,qty:0},
+  {nama:'SOJU ORI',harga:80000,qty:0},
+  {nama:'SOJU LECI',harga:80000,qty:0},
+  {nama:'SOJU DAEBAK',harga:80000,qty:0},
+  {nama:'KAMPUT',harga:60000,qty:0},
+  {nama:'ANKER',harga:37000,qty:0},
+  {nama:'ANKER LECI',harga:27000,qty:0},
+  {nama:'ANKER STOUT',harga:28000,qty:0},
+  {nama:'BIR BINTANG',harga:43000,qty:0},
+  {nama:'BIR DRAFT',harga:30000,qty:0},
+  {nama:'BIR PROST',harga:35000,qty:0},
+  {nama:'GUINNES JUMBO',harga:53000,qty:0},
+  {nama:'GUINNES KECIL',harga:35000,qty:0},
+  {nama:'GUINNES KALENG',harga:40000,qty:0},
+  {nama:'ANKER KALENG BESAR',harga:32000,qty:0},
+  {nama:'ANKER KALENG KECIL',harga:25000,qty:0},
+  {nama:'BINTANG KALENG BESAR',harga:35000,qty:0},
+  {nama:'SINGARAJA KALENG',harga:28000,qty:0},
+  {nama:'SINGARAJA BOTOL',harga:30000,qty:0},
+  {nama:'MIX-MAX',harga:30000,qty:0},
+  {nama:'JOKER',harga:70000,qty:0},
+  {nama:'KAWA-KAWA KECIL',harga:44000,qty:0},
+  {nama:'ROOT BEER',harga:10000,qty:0},
+  {nama:'GREEN SAND',harga:10000,qty:0},
+  {nama:'TEBS',harga:10000,qty:0},
+  {nama:'KRATINDENG',harga:7000,qty:0},
+  {nama:'SODA',harga:8000,qty:0},
+  {nama:'COCA-COLA',harga:5000,qty:0},
+  {nama:'SPRITE',harga:5000,qty:0},
+  {nama:'FANTA',harga:5000,qty:0}
+];
+let asc=true;
+
+function save(){localStorage.setItem('data',JSON.stringify(data));}
+
+function updateMinMax(){
+  if(!data.length) return;
+  const h=data.map(d=>d.harga);
+  minHarga.innerText='Rp '+Math.min(...h).toLocaleString('id-ID');
+  maxHarga.innerText='Rp '+Math.max(...h).toLocaleString('id-ID');
+}
+
+function render(){
+  tbody.innerHTML='';
+  let tq=0, th=0;
+  const f=search.value.toUpperCase();
+
+  data.forEach((d,i)=>{
+    if(!d.nama.toUpperCase().includes(f)) return;
+    const sub=d.harga*d.qty;
+    tq+=d.qty; th+=sub;
+
+    tbody.innerHTML+=`
+    <tr>
+      <td>${i+1}</td>
+      <td>${d.nama}</td>
+      <td>${d.harga.toLocaleString()}</td>
+      <td><input type="number" min="0" value="${d.qty}" class="form-control form-control-sm"
+          onchange="updateQty(${i},this.value)"></td>
+      <td>Rp ${sub.toLocaleString('id-ID')}</td>
+      <td>
+        <button class="btn btn-warning btn-sm" onclick="edit(${i})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="del(${i})">Hapus</button>
+      </td>
+    </tr>`;
+  });
+
+  totalQty.innerText=tq;
+  totalHarga.innerText='Rp '+th.toLocaleString('id-ID');
+  updateMinMax();
+}
+
+function updateQty(i,v){
+  data[i].qty=parseInt(v)||0;
+  save(); render();
+}
+
+function add(){
+  if(!nama.value||!harga.value) return alert('Lengkapi data');
+  data.push({nama:nama.value,harga:+harga.value,qty:0});
+  save(); render();
+  nama.value=''; harga.value='';
+}
+
+function edit(i){
+  const n=prompt('Nama',data[i].nama);
+  const h=prompt('Harga',data[i].harga);
+  if(n&&h){data[i]={...data[i],nama:n,harga:+h};save();render();}
+}
+
+function del(i){
+  if(confirm('Hapus?')){data.splice(i,1);save();render();}
+}
+
+function sortHarga(){
+  data.sort((a,b)=>asc?a.harga-b.harga:b.harga-a.harga);
+  asc=!asc; render();
+}
+
+/* PDF */
+function exportPDF(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+  doc.text('Daftar Pembelian Minuman',14,15);
+  doc.autoTable({
+    startY:25,
+    head:[['No','Nama','Qty','Harga','Subtotal']],
+    body:data.map((d,i)=>[
+      i+1,d.nama,d.qty,
+      'Rp '+d.harga.toLocaleString('id-ID'),
+      'Rp '+(d.harga*d.qty).toLocaleString('id-ID')
+    ])
+  });
+  doc.save('pembelian-minuman.pdf');
+}
+
+/* INIT */
+if(localStorage.getItem('login')) showDashboard();
+render();
+</script>
+
+</body>
+</html>
